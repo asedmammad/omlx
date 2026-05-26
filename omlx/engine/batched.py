@@ -237,6 +237,24 @@ class BatchedEngine(BaseEngine):
                 model, processor = custom_loaded
                 return model, getattr(processor, "tokenizer", processor)
 
+            from pathlib import Path
+
+            jang_cfg = Path(self._model_name) / "jang_config.json"
+            if jang_cfg.exists():
+                try:
+                    from jang_tools.loader import load_jang_model
+                except ImportError:
+                    raise ImportError(
+                        "JANG model detected but jang-tools not installed. "
+                        "Install with: pip install jang-tools[mlx]"
+                    )
+                import logging
+
+                logging.getLogger("omlx.engine.batched").info(
+                    f"Loading JANG model: {self._model_name}"
+                )
+                return load_jang_model(str(self._model_name))
+
             return load(
                 self._model_name,
                 tokenizer_config=tokenizer_config,
@@ -440,7 +458,8 @@ class BatchedEngine(BaseEngine):
         messages = self._preprocess_messages(messages)
         template_tools = convert_tools_for_template(tools) if tools else None
         prompt = self._apply_chat_template(
-            messages, template_tools,
+            messages,
+            template_tools,
             chat_template_kwargs=chat_template_kwargs,
             is_partial=is_partial,
         )
@@ -675,8 +694,10 @@ class BatchedEngine(BaseEngine):
         ct_kwargs = kwargs.pop("chat_template_kwargs", None)
         partial = kwargs.pop("is_partial", None)
         prompt = self._apply_chat_template(
-            messages, template_tools,
-            chat_template_kwargs=ct_kwargs, is_partial=partial,
+            messages,
+            template_tools,
+            chat_template_kwargs=ct_kwargs,
+            is_partial=partial,
         )
 
         return await self.generate(
@@ -735,8 +756,10 @@ class BatchedEngine(BaseEngine):
         ct_kwargs = kwargs.pop("chat_template_kwargs", None)
         partial = kwargs.pop("is_partial", None)
         prompt = self._apply_chat_template(
-            messages, template_tools,
-            chat_template_kwargs=ct_kwargs, is_partial=partial,
+            messages,
+            template_tools,
+            chat_template_kwargs=ct_kwargs,
+            is_partial=partial,
         )
 
         # SpecPrefill: compute system prompt token count for protection.
