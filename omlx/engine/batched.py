@@ -246,6 +246,7 @@ class BatchedEngine(BaseEngine):
                         _load_jang_v2,
                         _is_v2_model,
                     )
+                    from jang_tools.loader import load_jang_model
                     import json
                 except ImportError:
                     raise ImportError(
